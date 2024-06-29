@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { debounce } from 'lodash';
 import styles from './Validator.module.css';
 import { checkUrlType, checkUrlValidity } from '../../utils/validateUtils';
@@ -8,13 +8,14 @@ const Validadator = () => {
     const [isValidUrl, setIsValidUrl] = useState(false);
     const [urlStatus, setUrlStatus] = useState<string | null>(null);
 
-    const checkUrlExistence = async (url: string) => {
+    const debouncedCheckUrlExistence = useRef(debounce(async (url: string) => {
         try {
           // Mock server response
             const response = await new Promise<{ exists: boolean, type: string }>((resolve) => {
                 setTimeout(() => {
                     const urlType = checkUrlType(url);
-                resolve({ exists: true, type: urlType }); // Mock a successful response
+                    const exists = Math.random() > 0.5; // Randomly set URL existant
+                resolve({ exists, type: urlType });
                 }, 1000);
             });
     
@@ -26,16 +27,17 @@ const Validadator = () => {
         } catch (error) {
           setUrlStatus('Error checking URL');
         }
-      };
-
-    const debouncedCheckUrlExistence = debounce(checkUrlExistence, 500);
+      }, 500)).current;
 
     useEffect(() => {
         if (isValidUrl) {
+          setUrlStatus('Checking URL...');
             debouncedCheckUrlExistence(url);
         }
-        }, [url, isValidUrl]
-    );
+        else{
+          setUrlStatus('Enter a valid URL');
+        }
+        }, [url, isValidUrl]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const inputUrl = e.target.value;
@@ -55,11 +57,6 @@ const Validadator = () => {
         value={url}
         onChange={handleInputChange}
       />
-      {isValidUrl ? (
-        <p>Checking URL...</p>
-      ) : (
-        <p>Enter a valid URL</p>
-      )}
       {urlStatus && <p>{urlStatus}</p>}
     </div>
   )
