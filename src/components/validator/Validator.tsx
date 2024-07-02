@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { debounce } from 'lodash';
 import styles from './Validator.module.css';
 import { checkUrlType, checkUrlValidity } from '../../utils/validateUtils';
@@ -8,7 +8,8 @@ const Validadator = () => {
     const [isValidUrl, setIsValidUrl] = useState(false);
     const [urlStatus, setUrlStatus] = useState<string | null>(null);
 
-    const debouncedCheckUrlExistence = useRef(debounce(async (url: string) => {
+    const debouncedCheckUrlExistence = useMemo(
+      () =>debounce(async (url: string) => {
         try {
           // Mock server response
             const response = await new Promise<{ exists: boolean, type: string }>((resolve) => {
@@ -27,9 +28,12 @@ const Validadator = () => {
         } catch (error) {
           setUrlStatus('Error checking URL');
         }
-      }, 500)).current;
+      }, 500),[]);
 
     useEffect(() => {
+      if(url.length === 0) {
+        setUrlStatus('Enter a URL to check');
+      } else {
         if (isValidUrl) {
           setUrlStatus('Checking URL...');
             debouncedCheckUrlExistence(url);
@@ -37,16 +41,19 @@ const Validadator = () => {
         else{
           setUrlStatus('Enter a valid URL');
         }
+      }
+       
         }, [url, isValidUrl]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const inputUrl = e.target.value;
         setUrl(inputUrl);
         setIsValidUrl(checkUrlValidity(inputUrl));
         if (!checkUrlValidity(inputUrl)) {
             setUrlStatus(null);
         }
-    };
+    },
+    [checkUrlValidity]);
 
   return (
     <div className={styles.container}>
